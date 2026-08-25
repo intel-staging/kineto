@@ -32,6 +32,18 @@ bool XpuptiActivityProfilerSession::startsFlow(ActivityType activityType) {
   return activityType == ActivityType::XPU_RUNTIME;
 }
 
+bool XpuptiActivityProfilerSession::carriesFlow(ActivityType activityType) {
+  switch (activityType) {
+    case ActivityType::XPU_RUNTIME:
+    case ActivityType::CONCURRENT_KERNEL:
+    case ActivityType::GPU_MEMCPY:
+    case ActivityType::GPU_MEMSET:
+      return true;
+    default:
+      return false;
+  }
+}
+
 // =========== Session Constructor ============= //
 XpuptiActivityProfilerSession::XpuptiActivityProfilerSession(
     XpuptiActivityApi& xpti,

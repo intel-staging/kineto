@@ -39,3 +39,30 @@ TEST(XpuptiFlowCorrelationTest, DeviceRecordsDoNotStartFlow) {
   EXPECT_FALSE(KN::XpuptiActivityProfilerSession::startsFlow(
       KN::ActivityType::GPU_MEMSET));
 }
+
+// startsFlow() only picks the flow *source*. carriesFlow() decides whether a
+// record is a flow endpoint at all -- the bug was that driver (ze*) records
+// were still flow *ends* (sharing the runtime record's id), which draws a
+// redundant host->host arrow. They must carry no flow.
+
+TEST(XpuptiFlowCorrelationTest, RuntimeAndDeviceRecordsCarryFlow) {
+  // The runtime record is the flow source; device activities are its
+  // destinations. All are genuine ac2g endpoints.
+  EXPECT_TRUE(KN::XpuptiActivityProfilerSession::carriesFlow(
+      KN::ActivityType::XPU_RUNTIME));
+  EXPECT_TRUE(KN::XpuptiActivityProfilerSession::carriesFlow(
+      KN::ActivityType::CONCURRENT_KERNEL));
+  EXPECT_TRUE(KN::XpuptiActivityProfilerSession::carriesFlow(
+      KN::ActivityType::GPU_MEMCPY));
+  EXPECT_TRUE(KN::XpuptiActivityProfilerSession::carriesFlow(
+      KN::ActivityType::GPU_MEMSET));
+}
+
+TEST(XpuptiFlowCorrelationTest, DriverRecordsCarryNoFlow) {
+  // Driver (ze*) records share the runtime record's correlation id and are
+  // nested under the runtime "submit" slice on the same host track. A flow
+  // endpoint on them only produces a redundant host->host arrow, so they must
+  // carry no flow (neither start nor end).
+  EXPECT_FALSE(KN::XpuptiActivityProfilerSession::carriesFlow(
+      KN::ActivityType::XPU_DRIVER));
+}

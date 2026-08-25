@@ -200,8 +200,13 @@ void XpuptiActivityProfilerSession::handleRuntimeKernelMemcpyMemsetActivities(
   trace_activity->startTime = activity->_start_timestamp;
   trace_activity->endTime = activity->_end_timestamp;
   trace_activity->threadId = activity->_thread_id;
-  trace_activity->flow.id = activity->_correlation_id;
-  trace_activity->flow.type = libkineto::kLinkAsyncCpuGpu;
+  // Avoid a redundant flow arrow from the XPU_RUNTIME submit to its nested
+  // XPU_DRIVER (ze*) subspan: leave the flow id 0 so output_json's
+  // `flowId() > 0` guard skips the endpoint.
+  if (carriesFlow(activityType)) {
+    trace_activity->flow.id = activity->_correlation_id;
+    trace_activity->flow.type = libkineto::kLinkAsyncCpuGpu;
+  }
 
   trace_activity->id = activity->_correlation_id;
   trace_activity->linked =

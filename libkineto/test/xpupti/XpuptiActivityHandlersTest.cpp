@@ -16,10 +16,21 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <optional>
 
 namespace KN = KINETO_NAMESPACE;
 using namespace libkineto;
+
+// Tests below pass &record._view_kind as a pti_view_record_base* (the handler
+// casts it back by view kind, the PTI C-API idiom). That is only valid if the
+// base record is the first member -- enforce it at compile time.
+static_assert(
+    offsetof(pti_view_record_api, _view_kind) == 0,
+    "base record must be first member");
+static_assert(
+    offsetof(pti_view_record_kernel, _view_kind) == 0,
+    "base record must be first member");
 
 // Mock XpuptiActivityApi that delivers hand-crafted PTI records
 // through the virtual processActivities without needing PTI runtime.
@@ -331,6 +342,77 @@ TEST_F(XpuptiActivityHandlersTest, SynchronizationActivityOutOfRange) {
 
   auto traceBuffer = processAndGetTrace(100, 500);
   EXPECT_EQ(traceBuffer->activities.size(), 0);
+}
+
+// --- CPU->GPU flow endpoint tests ---
+
+// A SYCL "submit" (XPU_RUNTIME), its nested Level Zero append (XPU_DRIVER) and
+// the resulting device kernel all share one correlation id. Only the runtime
+// record (source) and the kernel record (destination) may be ac2g flow
+// endpoints. The driver record must carry no flow, otherwise Perfetto draws a
+// redundant host->host arrow from the runtime "submit" slice to its nested ze*
+// child. Uses _api_id/_api_group 84/LEVELZERO for the api records so
+// ptiViewGetApiIdName() resolves a name (same as the synchronization tests).
+TEST_F(
+    XpuptiActivityHandlersTest,
+    DriverRecordCarriesNoFlowKernelAndRuntimeDo) {
+  constexpr uint32_t kCorrelationId = 42;
+
+  pti_view_record_api runtime_record{};
+  runtime_record._view_kind._view_kind = PTI_VIEW_RUNTIME_API;
+  runtime_record._start_timestamp = 100;
+  runtime_record._end_timestamp = 150;
+  runtime_record._process_id = 1;
+  runtime_record._thread_id = 7;
+  runtime_record._correlation_id = kCorrelationId;
+  runtime_record._api_id = 84;
+  runtime_record._api_group = static_cast<pti_api_group_id>(1);
+
+  pti_view_record_api driver_record{};
+  driver_record._view_kind._view_kind = PTI_VIEW_DRIVER_API;
+  driver_record._start_timestamp = 110;
+  driver_record._end_timestamp = 140;
+  driver_record._process_id = 1;
+  driver_record._thread_id = 7;
+  driver_record._correlation_id = kCorrelationId;
+  driver_record._api_id = 84;
+  driver_record._api_group = static_cast<pti_api_group_id>(1);
+
+  pti_view_record_kernel kernel_record{};
+  kernel_record._view_kind._view_kind = PTI_VIEW_DEVICE_GPU_KERNEL;
+  kernel_record._name = "gemm_kernel";
+  kernel_record._start_timestamp = 200;
+  kernel_record._end_timestamp = 260;
+  kernel_record._thread_id = 7;
+  kernel_record._correlation_id = kCorrelationId;
+  kernel_record._sycl_queue_id = 3;
+  kernel_record._kernel_id = 9;
+
+  mockApi_.records.push_back(&runtime_record._view_kind);
+  mockApi_.records.push_back(&driver_record._view_kind);
+  mockApi_.records.push_back(&kernel_record._view_kind);
+
+  auto traceBuffer = processAndGetTrace();
+  ASSERT_EQ(traceBuffer->activities.size(), 3);
+
+  auto& runtime_activity = *traceBuffer->activities[0];
+  EXPECT_EQ(runtime_activity.type(), ActivityType::XPU_RUNTIME);
+  EXPECT_EQ(runtime_activity.flowId(), kCorrelationId);
+  EXPECT_EQ(runtime_activity.flowType(), kLinkAsyncCpuGpu);
+  EXPECT_TRUE(runtime_activity.flowStart());
+
+  auto& driver_activity = *traceBuffer->activities[1];
+  EXPECT_EQ(driver_activity.type(), ActivityType::XPU_DRIVER);
+  // The regression: no flow endpoint on the driver record (id stays 0, so
+  // output_json's `flowId() > 0` guard emits no link -> no redundant arrow).
+  EXPECT_EQ(driver_activity.flowId(), 0);
+  EXPECT_FALSE(driver_activity.flowStart());
+
+  auto& kernel_activity = *traceBuffer->activities[2];
+  EXPECT_EQ(kernel_activity.type(), ActivityType::CONCURRENT_KERNEL);
+  EXPECT_EQ(kernel_activity.flowId(), kCorrelationId);
+  EXPECT_EQ(kernel_activity.flowType(), kLinkAsyncCpuGpu);
+  EXPECT_FALSE(kernel_activity.flowStart());
 }
 
 // --- Mixed dispatch test ---

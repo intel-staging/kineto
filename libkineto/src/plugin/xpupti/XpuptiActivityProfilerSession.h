@@ -73,6 +73,10 @@ class XpuptiActivityProfilerSession
   // Static so it can be unit-tested without real hardware.
   static bool startsFlow(ActivityType activityType);
 
+  // Whether the record is a CPU->GPU flow endpoint (runtime source or device
+  // destination); XPU_DRIVER subspans are not. Static for unit testing.
+  static bool carriesFlow(ActivityType activityType);
+
  private:
   void checkTimestampOrder(const ITraceActivity* act1);
   void removeCorrelatedPtiActivities(const ITraceActivity* act1);
