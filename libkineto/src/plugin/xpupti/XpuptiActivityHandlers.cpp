@@ -6,16 +6,32 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#include "ActivityType.h"
+#include "GenericTraceActivity.h"
+#include "ITraceActivity.h"
 #include "MetadataFieldCatalog.h"
+#include "TraceSpan.h"
 #include "XpuptiActivityProfilerSession.h"
+#include "libkineto.h"
+#include "output_base.h"
 #include "output_json.h"
 
+#include <bits/std_abs.h>
 #include <algorithm>
-#include <iterator>
-#include <type_traits>
+#include <cstdint>
+#include <deque>
+#include <functional>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <fmt/format.h>
-#include <fmt/ranges.h>
+#include <pti/pti_view.h>
 
 namespace KINETO_NAMESPACE {
 

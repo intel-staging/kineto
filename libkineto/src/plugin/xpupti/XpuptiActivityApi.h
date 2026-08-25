@@ -8,15 +8,18 @@
 
 #pragma once
 
-#include "XpuptiActivityBuffer.h"
-#include "XpuptiProfilerMacros.h"
-
 #include "ActivityType.h"
+#include "XpuptiActivityBuffer.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <set>
+#include <utility>
 
 #include <pti/pti_view.h>
-
-#include <functional>
-#include <mutex>
 
 namespace KINETO_NAMESPACE {
 

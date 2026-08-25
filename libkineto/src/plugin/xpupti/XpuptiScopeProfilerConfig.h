@@ -8,9 +8,13 @@
 
 #pragma once
 
+#include "AbstractConfig.h"
 #include "Config.h"
 
 #include <chrono>
+#include <cstdint>
+#include <iosfwd>
+#include <string>
 #include <vector>
 
 namespace KINETO_NAMESPACE {

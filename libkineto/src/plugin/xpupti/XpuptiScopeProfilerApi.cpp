@@ -6,14 +6,23 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include <algorithm>
-#include <iterator>
-#include <stdexcept>
-
 #include "XpuptiScopeProfilerApi.h"
+#include "Config.h"
+#include "ThrowUtil.h"
+#include "XpuptiProfilerMacros.h"
 #include "XpuptiScopeProfilerConfig.h"
 
-#include "ThrowUtil.h"
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include <pti/pti.h>
+#include <pti/pti_metrics.h>
 
 namespace KINETO_NAMESPACE {
 

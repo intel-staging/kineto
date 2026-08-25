@@ -7,12 +7,19 @@
  */
 
 #include "XpuptiActivityApi.h"
+#include "ILoggerObserver.h"
+#include "Logger.h"
+#include "XpuptiActivityBuffer.h"
+#include "XpuptiProfilerMacros.h"
 
 #include <chrono>
+#include <cstdlib>
 #include <filesystem>
-#include <stdexcept>
+#include <map>
+#include <ostream>
+#include <system_error>
 
-#include "Logger.h"
+#include <pti/pti.h>
 
 namespace KINETO_NAMESPACE {
 

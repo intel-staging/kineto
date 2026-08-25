@@ -8,11 +8,11 @@
 
 #pragma once
 
+#include <exception>
+#include <functional>
 #include <optional>
 
 #include <pti/pti_metrics_scope.h>
-
-#include "XpuptiActivityApi.h"
 
 namespace KINETO_NAMESPACE {
 
