@@ -16,9 +16,9 @@
 #include "output_base.h"
 #include "output_json.h"
 
-#include <bits/std_abs.h>
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <deque>
 #include <functional>
 #include <map>
@@ -26,6 +26,7 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -152,7 +153,7 @@ void XpuptiActivityProfilerSession::addResouceInfo(
 
 template <class T>
 inline std::string formatTimeLikeOutputJson(T time) {
-  return fmt::format("{}.{:03}", time / 1000, abs(time) % 1000);
+  return fmt::format("{}.{:03}", time / 1000, std::abs(time) % 1000);
 }
 
 inline int64_t signedFromUnsignedDiff(uint64_t time, uint64_t time_ref) {

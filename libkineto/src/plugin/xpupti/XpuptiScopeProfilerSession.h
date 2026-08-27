@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include <ActivityType.h>
-#include <Config.h>
-#include <ITraceActivity.h>
+#include "ActivityType.h"
+#include "Config.h"
+#include "ITraceActivity.h"
 #include "XpuptiActivityApi.h"
 #include "XpuptiActivityProfilerSession.h"
 #include "XpuptiScopeProfilerApi.h"
