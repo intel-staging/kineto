@@ -32,9 +32,9 @@ class XpuptiScopeProfilerApi {
   void stopScopeActivity();
 
   void processScopeTrace(
-      std::function<void(
+      const std::function<void(
           const pti_metrics_scope_record_t*,
-          const pti_metrics_scope_record_metadata_t& metadata)> handler);
+          const pti_metrics_scope_record_metadata_t& metadata)>& handler);
 
  private:
   struct safe_pti_scope_collection_handle_t {

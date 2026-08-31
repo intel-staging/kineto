@@ -8,7 +8,9 @@
 
 #include "XpuptiActivityProfilerSession.h"
 #include "XpuptiActivityApi.h"
+#include "XpuptiProfilerMacros.h"
 
+#include "Logger.h"
 #include "time_since_epoch.h"
 
 #include <pti/pti_version.h>
@@ -75,11 +77,14 @@ void XpuptiActivityProfilerSession::processTrace(ActivityLogger& logger) {
   traceBuffer_.span.iteration = iterationCount_++;
   auto gpuBuffer = xpti_.activityBuffers();
   if (gpuBuffer) {
-    xpti_.processActivities(
+    const auto stats = xpti_.processActivities(
         *gpuBuffer,
         [this, &logger](const pti_view_record_base* record) -> void {
           handlePtiActivity(record, logger);
         });
+    LOG(INFO) << "Processed " << stats.activitiesCount << " GPU records ("
+              << stats.buffersSize << " bytes)";
+    LOGGER_OBSERVER_ADD_EVENT_COUNT(stats.activitiesCount);
   }
   for (auto& kv : userAnnotationsByStream_) {
     kv.second->log(logger);

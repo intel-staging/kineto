@@ -111,9 +111,9 @@ static size_t IntDivRoundUp(size_t a, size_t b) {
 }
 
 void XpuptiScopeProfilerApi::processScopeTrace(
-    std::function<void(
+    const std::function<void(
         const pti_metrics_scope_record_t*,
-        const pti_metrics_scope_record_metadata_t& metadata)> handler) {
+        const pti_metrics_scope_record_metadata_t& metadata)>& handler) {
   if (scopeHandleOpt_) {
     pti_metrics_scope_record_metadata_t metadata;
     metadata._struct_size = sizeof(pti_metrics_scope_record_metadata_t);

@@ -32,13 +32,14 @@ class MockXpuptiActivityApi : public KN::XpuptiActivityApi {
     return std::make_unique<KN::XpuptiActivityBufferMap>();
   }
 
-  const std::pair<int, int> processActivities(
+  KN::ActivitiesStats processActivities(
       KN::XpuptiActivityBufferMap&,
-      std::function<void(const pti_view_record_base*)> handler) override {
+      const std::function<void(const pti_view_record_base*)>& handler)
+      override {
     for (auto* record : records) {
       handler(record);
     }
-    return {static_cast<int>(records.size()), 0};
+    return {.activitiesCount = records.size(), .buffersSize = 0};
   }
 };
 

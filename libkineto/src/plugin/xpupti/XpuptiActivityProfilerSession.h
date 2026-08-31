@@ -144,7 +144,7 @@ class XpuptiActivityProfilerSession
   XpuptiActivityApi& xpti_;
   libkineto::CpuTraceBuffer traceBuffer_;
   std::vector<std::pair<int32_t, int32_t>> resourceInfo_;
-  std::unique_ptr<const libkineto::Config> config_{nullptr};
+  std::unique_ptr<const libkineto::Config> config_;
   const std::set<ActivityType>& activity_types_;
   std::string name_;
 

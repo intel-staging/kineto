@@ -20,6 +20,11 @@
 
 namespace KINETO_NAMESPACE {
 
+struct ActivitiesStats {
+  std::size_t activitiesCount;
+  std::size_t buffersSize; // Valid bytes
+};
+
 class XpuptiActivityApi {
  public:
   enum CorrelationFlowType { Default, User };
@@ -43,9 +48,9 @@ class XpuptiActivityApi {
 
   virtual std::unique_ptr<XpuptiActivityBufferMap> activityBuffers();
 
-  virtual const std::pair<int, int> processActivities(
+  virtual ActivitiesStats processActivities(
       XpuptiActivityBufferMap&,
-      std::function<void(const pti_view_record_base*)> handler);
+      const std::function<void(const pti_view_record_base*)>& handler);
 
  private:
   XpuptiActivityBufferMap allocatedGpuTraceBuffers_;
@@ -53,19 +58,24 @@ class XpuptiActivityApi {
   std::mutex mutex_;
   bool externalCorrelationEnabled_{false};
 
-  int processActivitiesForBuffer(
-      uint8_t* buf,
-      size_t validSize,
-      std::function<void(const pti_view_record_base*)> handler);
-  static void bufferRequestedTrampoline(uint8_t** buffer, size_t* size);
+  std::size_t processActivitiesForBuffer(
+      std::uint8_t* buf,
+      std::size_t validSize,
+      const std::function<void(const pti_view_record_base*)>& handler);
+  static void bufferRequestedTrampoline(
+      std::uint8_t** buffer,
+      std::size_t* size);
   static void bufferCompletedTrampoline(
-      uint8_t* buffer,
-      size_t size,
-      size_t validSize);
+      std::uint8_t* buffer,
+      std::size_t size,
+      std::size_t validSize);
 
  protected:
-  void bufferRequested(uint8_t** buffer, size_t* size);
-  void bufferCompleted(uint8_t* buffer, size_t size, size_t validSize);
+  void bufferRequested(std::uint8_t** buffer, std::size_t* size);
+  void bufferCompleted(
+      std::uint8_t* buffer,
+      std::size_t size,
+      std::size_t validSize);
 };
 
 } // namespace KINETO_NAMESPACE
