@@ -23,27 +23,6 @@ namespace KINETO_NAMESPACE {
 uint32_t XpuptiActivityProfilerSession::iterationCount_ = 0;
 std::vector<DeviceUUIDsT> XpuptiActivityProfilerSession::deviceUUIDs_ = {};
 
-bool XpuptiActivityProfilerSession::startsFlow(ActivityType activityType) {
-  // Only host runtime records start the CPU->GPU flow. The runtime view is
-  // already filtered to work-submitting APIs via
-  // ptiViewEnableRuntimeApiClass(PTI_API_CLASS_GPU_OPERATION_CORE). Driver
-  // (XPU_DRIVER) records share the same correlation id as the runtime record
-  // and must not also start a flow, or the trace gets a duplicate flow start.
-  return activityType == ActivityType::XPU_RUNTIME;
-}
-
-bool XpuptiActivityProfilerSession::carriesFlow(ActivityType activityType) {
-  switch (activityType) {
-    case ActivityType::XPU_RUNTIME:
-    case ActivityType::CONCURRENT_KERNEL:
-    case ActivityType::GPU_MEMCPY:
-    case ActivityType::GPU_MEMSET:
-      return true;
-    default:
-      return false;
-  }
-}
-
 // =========== Session Constructor ============= //
 XpuptiActivityProfilerSession::XpuptiActivityProfilerSession(
     XpuptiActivityApi& xpti,

@@ -159,6 +159,30 @@ static void addTimestampMetadata(
       label, formatTimeLikeOutputJson(signedFromUnsignedDiff(time, time_ref)));
 }
 
+namespace {
+
+// Part a record plays in the async CPU->GPU ("ac2g") flow linking a host submit
+// to the device operation it enqueued.
+enum class Ac2gFlowRole : uint8_t { None, Source, Destination };
+
+// XPU_DRIVER (ze*) subspans share the runtime record's correlation id but play
+// no part: they are nested under the submit on the same host track, so an arrow
+// to them would run host->host.
+Ac2gFlowRole ac2gFlowRole(ActivityType activityType) {
+  switch (activityType) {
+    case ActivityType::XPU_RUNTIME:
+      return Ac2gFlowRole::Source;
+    case ActivityType::CONCURRENT_KERNEL:
+    case ActivityType::GPU_MEMCPY:
+    case ActivityType::GPU_MEMSET:
+      return Ac2gFlowRole::Destination;
+    default:
+      return Ac2gFlowRole::None;
+  }
+}
+
+} // namespace
+
 template <class pti_view_memory_record_type>
 void XpuptiActivityProfilerSession::handleRuntimeKernelMemcpyMemsetActivities(
     ActivityType activityType,
@@ -200,12 +224,13 @@ void XpuptiActivityProfilerSession::handleRuntimeKernelMemcpyMemsetActivities(
   trace_activity->startTime = activity->_start_timestamp;
   trace_activity->endTime = activity->_end_timestamp;
   trace_activity->threadId = activity->_thread_id;
-  // Avoid a redundant flow arrow from the XPU_RUNTIME submit to its nested
-  // XPU_DRIVER (ze*) subspan: leave the flow id 0 so output_json's
-  // `flowId() > 0` guard skips the endpoint.
-  if (carriesFlow(activityType)) {
+  // Records with no role keep flow id 0, which output_json's `flowId() > 0`
+  // guard skips -- that is what suppresses the arrow.
+  if (const auto role = ac2gFlowRole(activityType);
+      role != Ac2gFlowRole::None) {
     trace_activity->flow.id = activity->_correlation_id;
     trace_activity->flow.type = libkineto::kLinkAsyncCpuGpu;
+    trace_activity->flow.start = (role == Ac2gFlowRole::Source);
   }
 
   trace_activity->id = activity->_correlation_id;
@@ -218,11 +243,9 @@ void XpuptiActivityProfilerSession::handleRuntimeKernelMemcpyMemsetActivities(
   if constexpr (handleRuntimeActivities) {
     trace_activity->device = activity->_process_id;
     trace_activity->resource = activity->_thread_id;
-    trace_activity->flow.start = startsFlow(activityType);
   } else {
     trace_activity->device = getDeviceIdxFromUUID(activity->_device_uuid);
     trace_activity->resource = activity->_sycl_queue_id;
-    trace_activity->flow.start = 0;
 
     if constexpr (handleKernelActivities) {
       kernelActivities_[activity->_kernel_id].emplace(

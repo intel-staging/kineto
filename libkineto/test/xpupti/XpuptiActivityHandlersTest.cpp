@@ -31,6 +31,12 @@ static_assert(
 static_assert(
     offsetof(pti_view_record_kernel, _view_kind) == 0,
     "base record must be first member");
+static_assert(
+    offsetof(pti_view_record_memory_copy, _view_kind) == 0,
+    "base record must be first member");
+static_assert(
+    offsetof(pti_view_record_memory_fill, _view_kind) == 0,
+    "base record must be first member");
 
 // Mock XpuptiActivityApi that delivers hand-crafted PTI records
 // through the virtual processActivities without needing PTI runtime.
@@ -344,7 +350,7 @@ TEST_F(XpuptiActivityHandlersTest, SynchronizationActivityOutOfRange) {
   EXPECT_EQ(traceBuffer->activities.size(), 0);
 }
 
-// --- CPU->GPU flow endpoint tests ---
+// --- ac2g flow role tests ---
 
 // A SYCL "submit" (XPU_RUNTIME), its nested Level Zero append (XPU_DRIVER) and
 // the resulting device kernel all share one correlation id. Only the runtime
@@ -407,12 +413,65 @@ TEST_F(
   // output_json's `flowId() > 0` guard emits no link -> no redundant arrow).
   EXPECT_EQ(driver_activity.flowId(), 0);
   EXPECT_FALSE(driver_activity.flowStart());
+  // Id and type must be set together: an id with type 0 reaches
+  // handleGenericLink(), which logs "Unknown flow type" per record.
+  EXPECT_EQ(driver_activity.flowType(), 0);
 
   auto& kernel_activity = *traceBuffer->activities[2];
   EXPECT_EQ(kernel_activity.type(), ActivityType::CONCURRENT_KERNEL);
   EXPECT_EQ(kernel_activity.flowId(), kCorrelationId);
   EXPECT_EQ(kernel_activity.flowType(), kLinkAsyncCpuGpu);
   EXPECT_FALSE(kernel_activity.flowStart());
+}
+
+// Memcpy and memset are device-side work like kernels, so they are flow
+// destinations too. Each carries its own correlation id, matching one submit.
+TEST_F(XpuptiActivityHandlersTest, MemcpyAndMemsetRecordsAreFlowDestinations) {
+  constexpr uint32_t kMemcpyCorrelationId = 51;
+  constexpr uint32_t kMemsetCorrelationId = 52;
+
+  pti_view_record_memory_copy memcpy_record{};
+  memcpy_record._view_kind._view_kind = PTI_VIEW_DEVICE_GPU_MEM_COPY;
+  memcpy_record._name = "zeCommandListAppendMemoryCopy";
+  memcpy_record._start_timestamp = 200;
+  memcpy_record._end_timestamp = 240;
+  memcpy_record._thread_id = 7;
+  memcpy_record._correlation_id = kMemcpyCorrelationId;
+  memcpy_record._sycl_queue_id = 3;
+  memcpy_record._bytes = 4096;
+  memcpy_record._memcpy_type = PTI_VIEW_MEMCPY_TYPE_H2D;
+  memcpy_record._mem_src = PTI_VIEW_MEMORY_TYPE_HOST;
+  memcpy_record._mem_dst = PTI_VIEW_MEMORY_TYPE_DEVICE;
+
+  pti_view_record_memory_fill memset_record{};
+  memset_record._view_kind._view_kind = PTI_VIEW_DEVICE_GPU_MEM_FILL;
+  memset_record._name = "zeCommandListAppendMemoryFill";
+  memset_record._start_timestamp = 300;
+  memset_record._end_timestamp = 330;
+  memset_record._thread_id = 7;
+  memset_record._correlation_id = kMemsetCorrelationId;
+  memset_record._sycl_queue_id = 3;
+  memset_record._bytes = 1024;
+  memset_record._mem_type = PTI_VIEW_MEMORY_TYPE_DEVICE;
+  memset_record._value_for_set = 0;
+
+  mockApi_.records.push_back(&memcpy_record._view_kind);
+  mockApi_.records.push_back(&memset_record._view_kind);
+
+  auto traceBuffer = processAndGetTrace();
+  ASSERT_EQ(traceBuffer->activities.size(), 2);
+
+  auto& memcpy_activity = *traceBuffer->activities[0];
+  EXPECT_EQ(memcpy_activity.type(), ActivityType::GPU_MEMCPY);
+  EXPECT_EQ(memcpy_activity.flowId(), kMemcpyCorrelationId);
+  EXPECT_EQ(memcpy_activity.flowType(), kLinkAsyncCpuGpu);
+  EXPECT_FALSE(memcpy_activity.flowStart());
+
+  auto& memset_activity = *traceBuffer->activities[1];
+  EXPECT_EQ(memset_activity.type(), ActivityType::GPU_MEMSET);
+  EXPECT_EQ(memset_activity.flowId(), kMemsetCorrelationId);
+  EXPECT_EQ(memset_activity.flowType(), kLinkAsyncCpuGpu);
+  EXPECT_FALSE(memset_activity.flowStart());
 }
 
 // --- Mixed dispatch test ---

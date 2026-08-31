@@ -24,11 +24,6 @@ add_executable(XpuptiActivityHandlersTest XpuptiActivityHandlersTest.cpp)
 target_link_libraries(XpuptiActivityHandlersTest PRIVATE ${LINK_LIBRARIES})
 gtest_discover_tests(XpuptiActivityHandlersTest)
 
-# Hardware-free test for the CPU->GPU flow-link allowlist.
-add_executable(XpuptiFlowCorrelationTest XpuptiFlowCorrelationTest.cpp)
-target_link_libraries(XpuptiFlowCorrelationTest PRIVATE ${LINK_LIBRARIES})
-gtest_discover_tests(XpuptiFlowCorrelationTest)
-
 include(ExternalProject)
 
 # The compute translation unit contains SYCL device code and must be built by
