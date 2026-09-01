@@ -226,8 +226,8 @@ void XpuptiActivityProfilerSession::handleRuntimeKernelMemcpyMemsetActivities(
   trace_activity->threadId = activity->_thread_id;
   // Records with no role keep flow id 0, which output_json's `flowId() > 0`
   // guard skips -- that is what suppresses the arrow.
-  if (const auto role = ac2gFlowRole(activityType);
-      role != Ac2gFlowRole::None) {
+  const auto role = ac2gFlowRole(activityType);
+  if (role != Ac2gFlowRole::None) {
     trace_activity->flow.id = activity->_correlation_id;
     trace_activity->flow.type = libkineto::kLinkAsyncCpuGpu;
     trace_activity->flow.start = (role == Ac2gFlowRole::Source);
