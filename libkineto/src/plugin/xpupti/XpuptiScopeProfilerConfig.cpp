@@ -7,10 +7,12 @@
  */
 
 #include "XpuptiScopeProfilerConfig.h"
-
 #include <Logger.h>
 
-#include <fmt/core.h>
+#include <functional>
+#include <ostream>
+#include <string_view>
+
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
 

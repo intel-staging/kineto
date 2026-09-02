@@ -6,16 +6,33 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#include "ActivityType.h"
+#include "GenericTraceActivity.h"
+#include "ITraceActivity.h"
 #include "MetadataFieldCatalog.h"
+#include "TraceSpan.h"
 #include "XpuptiActivityProfilerSession.h"
+#include "libkineto.h"
+#include "output_base.h"
 #include "output_json.h"
 
 #include <algorithm>
-#include <iterator>
+#include <cstdint>
+#include <cstdlib>
+#include <deque>
+#include <functional>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <tuple>
 #include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <fmt/format.h>
-#include <fmt/ranges.h>
+#include <pti/pti_view.h>
 
 namespace KINETO_NAMESPACE {
 
@@ -136,7 +153,7 @@ void XpuptiActivityProfilerSession::addResouceInfo(
 
 template <class T>
 inline std::string formatTimeLikeOutputJson(T time) {
-  return fmt::format("{}.{:03}", time / 1000, abs(time) % 1000);
+  return fmt::format("{}.{:03}", time / 1000, std::abs(time) % 1000);
 }
 
 inline int64_t signedFromUnsignedDiff(uint64_t time, uint64_t time_ref) {

@@ -8,19 +8,26 @@
 
 #pragma once
 
-#include "XpuptiProfilerMacros.h"
-
+#include "ActivityType.h"
+#include "Config.h"
+#include "GenericTraceActivity.h"
 #include "IActivityProfiler.h"
+#include "ITraceActivity.h"
+#include "XpuptiProfilerMacros.h"
 #include "libkineto.h"
 
-#include <pti/pti_view.h>
-
+#include <array>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
+
+#include <pti/pti_view.h>
 
 namespace KINETO_NAMESPACE {
 
